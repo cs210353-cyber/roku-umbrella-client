@@ -136,7 +136,8 @@ sub onPlayRequested()
 
         m.videoPlayer.content = videoContent
         m.videoPlayer.visible = true
-        m.videoPlayer.setFocus(true)
+        m.videoPlayer.setFocus(false)
+        m.top.setFocus(true)
         m.videoPlayer.control = "play"
     end if
 end sub
@@ -153,15 +154,18 @@ end sub
 function onKeyEvent(key as String, press as Boolean) as Boolean
     if not press then return false
 
+    normKey = LCase(Trim(key))
+
     if m.videoPlayer.visible
-        if key = "back"
+        if normKey = "back" or normKey = "buttonback"
             m.videoPlayer.control = "stop"
             m.videoPlayer.visible = false
             m.mediaGrid.setFocus(true)
             return true
         end if
+        return true
     else if m.detailsDialog.visible
-        if key = "back"
+        if normKey = "back" or normKey = "buttonback"
             m.detailsDialog.visible = false
             m.mediaGrid.setFocus(true)
             return true
@@ -169,13 +173,13 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         ' Handled by detailsDialog
         return false
     else
-        if key = "up" and m.mediaGrid.hasFocus()
+        if (normKey = "up" or normKey = "buttonup") and m.mediaGrid.hasFocus()
             m.categoryTabs.setFocus(true)
             return true
-        else if key = "down" and m.categoryTabs.hasFocus()
+        else if (normKey = "down" or normKey = "buttondown") and m.categoryTabs.hasFocus()
             m.mediaGrid.setFocus(true)
             return true
-        else if key = "OK" or key = "select"
+        else if normKey = "ok" or normKey = "select"
             if m.mediaGrid.hasFocus()
                 onGridItemSelected()
                 return true
