@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<component name="MediaDetailsDialog" extends="Group">
+<component name="MediaDetailsDialog" extends="Group" focusable="true">
     <interface>
         <field id="mediaItem" type="node" onChange="onMediaItemChanged" />
         <field id="playRequested" type="boolean" alwaysNotify="true" />

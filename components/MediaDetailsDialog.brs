@@ -62,7 +62,8 @@ sub onResolverStatusChanged()
 end sub
 
 sub onSourceSelected()
-    index = m.sourcesList.itemSelected
+    index = m.sourcesList.itemFocused
+    if index < 0 then index = m.sourcesList.itemSelected
     if index >= 0 and index < m.resolvedUrls.Count()
         m.top.selectedStreamUrl = m.resolvedUrls[index]
         m.top.playRequested = true
@@ -74,7 +75,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
     if key = "back"
         m.top.closeRequested = true
         return true
-    else if key = "OK"
+    else if key = "OK" or key = "select"
         onSourceSelected()
         return true
     end if

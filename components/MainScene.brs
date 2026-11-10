@@ -161,6 +161,11 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
             return true
         end if
     else if m.detailsDialog.visible
+        if key = "back"
+            m.detailsDialog.visible = false
+            m.mediaGrid.setFocus(true)
+            return true
+        end if
         ' Handled by detailsDialog
         return false
     else
@@ -170,6 +175,14 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         else if key = "down" and m.categoryTabs.hasFocus()
             m.mediaGrid.setFocus(true)
             return true
+        else if key = "OK" or key = "select"
+            if m.mediaGrid.hasFocus()
+                onGridItemSelected()
+                return true
+            else if m.categoryTabs.hasFocus()
+                onCategorySelected()
+                return true
+            end if
         end if
     end if
     return false
