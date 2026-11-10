@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="StreamResolverTask" extends="Task">
+    <interface>
+        <field id="tmdbId" type="integer" />
+        <field id="mediaTitle" type="string" />
+        <field id="mediaYear" type="integer" />
+        <field id="resolvedStreamUrl" type="string" />
+        <field id="streamQuality" type="string" />
+        <field id="streamProvider" type="string" />
+        <field id="streamSources" type="array" />
+        <field id="status" type="string" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/source/utils.brs" />
+    <script type="text/brightscript" uri="pkg:/source/AllDebridService.brs" />
+    <script type="text/brightscript" uri="pkg:/components/tasks/StreamResolverTask.brs" />
+</component>
