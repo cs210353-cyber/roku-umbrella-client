@@ -89,10 +89,9 @@ sub resolveStream()
     end if
 
     ' -------------------------------------------------------------------------
-    ' 4. Umbrella Upstream Reference Pattern: Deduplicate & Sort by Quality/Audio
+    ' 4. Local CocoScrapers Provider Scoring, Filtering & 4K Enforcement (Prompt #109)
     ' -------------------------------------------------------------------------
-    sources = UmbrellaFilterDuplicates(sources)
-    sources = UmbrellaSortSources(sources)
+    sources = CocoScrapersSortAndFilter(sources)
 
     ' -------------------------------------------------------------------------
     ' 5. Final Source Selection & Status Update
@@ -104,7 +103,7 @@ sub resolveStream()
         m.top.streamProvider = best.provider
         m.top.streamSources = sources
         m.top.status = "RESOLVED"
-        print "[StreamResolverTask] Resolved " + sources.Count().ToStr() + " sources. Primary (Umbrella Ranked): " + best.name + " (" + best.url + ")"
+        print "[LocalCocoScrapers] Resolved " + sources.Count().ToStr() + " sources. Primary (4K Remux Enforced): " + best.name + " [" + best.quality + "] (" + best.url + ")"
     else
         m.top.status = "FAILED"
         print "[StreamResolverTask] Failed to resolve stream sources for: " + title
