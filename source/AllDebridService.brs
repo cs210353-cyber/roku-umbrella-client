@@ -121,11 +121,16 @@ function AllDebridRequest(endpoint as String, method as String, queryParams as O
     if Left(endpoint, 5) = "v4.1/"
         baseUrl = "https://api.alldebrid.com/" + endpoint
     end if
+    msgPort = CreateObject("roMessagePort")
     transfer = CreateObject("roUrlTransfer")
+    transfer.SetPort(msgPort)
     transfer.SetCertificatesFile("common:/certs/ca-bundle.crt")
     transfer.InitClientCertificates()
     transfer.EnableEncodings(true)
     transfer.AddHeader("User-Agent", "RokuUmbrellaClient/1.0")
+
+    ' Prompt #104: Explicit 5-second transfer timeout guard to prevent worker thread lockups
+    transfer.SetMinimumTransferRate(100, 5)
 
     ' Build Query String
     qs = "agent=RokuUmbrellaClient"
@@ -145,7 +150,16 @@ function AllDebridRequest(endpoint as String, method as String, queryParams as O
     fullUrl = baseUrl + "?" + qs
     transfer.SetUrl(fullUrl)
 
+    result = {
+        success: false,
+        status: "error",
+        data: invalid,
+        error: ""
+    }
+
     responseStr = ""
+    timeoutMs = 5000 ' 5-second max wait threshold
+
     if UCase(method) = "POST"
         postBody = ""
         transfer.AddHeader("Content-Type", "application/x-www-form-urlencoded")
@@ -160,17 +174,45 @@ function AllDebridRequest(endpoint as String, method as String, queryParams as O
                 end if
             end for
         end if
-        responseStr = transfer.PostFromString(postBody)
-    else
-        responseStr = transfer.GetToString()
-    end if
 
-    result = {
-        success: false,
-        status: "error",
-        data: invalid,
-        error: ""
-    }
+        asyncStarted = transfer.AsyncPostFromString(postBody)
+        if asyncStarted
+            msg = wait(timeoutMs, msgPort)
+            if type(msg) = "roUrlEvent"
+                httpCode = msg.GetResponseCode()
+                if httpCode >= 200 and httpCode < 400
+                    responseStr = msg.GetString()
+                else
+                    result.error = "HTTP error " + httpCode.ToStr() + ": " + msg.GetFailureReason()
+                end if
+            else
+                transfer.AsyncCancel()
+                result.error = "AllDebrid POST request timed out after 5000ms"
+                print "[AllDebrid] POST request timed out (5s guard) for: " + fullUrl
+            end if
+        else
+            result.error = "Failed to initiate async POST transfer"
+        end if
+    else
+        asyncStarted = transfer.AsyncGetToString()
+        if asyncStarted
+            msg = wait(timeoutMs, msgPort)
+            if type(msg) = "roUrlEvent"
+                httpCode = msg.GetResponseCode()
+                if httpCode >= 200 and httpCode < 400
+                    responseStr = msg.GetString()
+                else
+                    result.error = "HTTP error " + httpCode.ToStr() + ": " + msg.GetFailureReason()
+                end if
+            else
+                transfer.AsyncCancel()
+                result.error = "AllDebrid GET request timed out after 5000ms"
+                print "[AllDebrid] GET request timed out (5s guard) for: " + fullUrl
+            end if
+        else
+            result.error = "Failed to initiate async GET transfer"
+        end if
+    end if
 
     if responseStr <> "" and responseStr <> invalid
         jsonObj = ParseJson(responseStr)

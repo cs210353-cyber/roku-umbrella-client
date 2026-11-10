@@ -41,6 +41,7 @@ sub resolveStream()
             if debridSource <> invalid and debridSource.url <> ""
                 print "[StreamResolverTask] AllDebrid unlocked premium source: " + debridSource.name
                 sources.push(debridSource)
+                exit for
             end if
         end for
     end if
