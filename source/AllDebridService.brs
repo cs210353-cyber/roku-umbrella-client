@@ -442,7 +442,100 @@ function AllDebridUnlockLink(hosterUrl as String, apiKey = "" as String) as Obje
 end function
 
 ' ------------------------------------------------------------------------------
-' 6. High-Level Premium Stream Resolver Pipeline
+' 6. Release & Torrent File Preference Scorer (Prompt #106)
+' ------------------------------------------------------------------------------
+function PickBestDebridTorrentFile(links as Object) as Object
+    if links = invalid or type(links) <> "roArray" or links.Count() = 0
+        return invalid
+    end if
+
+    bestLink = invalid
+    bestScore = -1
+
+    for each item in links
+        if item <> invalid and item.filename <> invalid and item.link <> invalid
+            fn = LCase(item.filename)
+            ' Check for video extension
+            isVideo = (Right(fn, 4) = ".mkv" or Right(fn, 4) = ".mp4" or Right(fn, 5) = ".m2ts" or Right(fn, 3) = ".ts" or Right(fn, 4) = ".avi")
+
+            ' Ignore samples and extras
+            if isVideo and Instr(1, fn, "sample") = 0 and Instr(1, fn, "trailer") = 0
+                score = 100
+                ' 4K UHD / 2160p weighting
+                if Instr(1, fn, "2160p") > 0 or Instr(1, fn, "4k") > 0 or Instr(1, fn, "uhd") > 0
+                    score = score + 5000
+                end if
+                ' REMUX weighting (lossless direct BD disc dump)
+                if Instr(1, fn, "remux") > 0
+                    score = score + 3000
+                end if
+                ' Lossless audio weighting (DTS-HD MA, TrueHD, Atmos, FLAC)
+                if Instr(1, fn, "dts-hd") > 0 or Instr(1, fn, "truehd") > 0 or Instr(1, fn, "atmos") > 0 or Instr(1, fn, "flac") > 0
+                    score = score + 1500
+                end if
+                ' 1080p weighting
+                if Instr(1, fn, "1080p") > 0
+                    score = score + 1000
+                end if
+                ' HDR / Dolby Vision weighting
+                if Instr(1, fn, "hdr") > 0 or Instr(1, fn, "dv") > 0 or Instr(1, fn, "dovi") > 0
+                    score = score + 500
+                end if
+                ' Filesize bonus (larger files = higher uncompressed bitrate)
+                if item.size <> invalid and Val(item.size.ToStr()) > 0
+                    mb = Val(item.size.ToStr()) / (1024 * 1024)
+                    score = score + Int(mb)
+                end if
+
+                if score > bestScore
+                    bestScore = score
+                    bestLink = item
+                end if
+            end if
+        end if
+    end for
+
+    ' Fallback to first link if no video file matched
+    if bestLink = invalid and links.Count() > 0
+        bestLink = links[0]
+    end if
+
+    return bestLink
+end function
+
+function DetermineStreamQualityLabel(filename as String, defaultQuality = "1080p FHD" as String) as String
+    if filename = invalid or filename = "" then return defaultQuality
+    fn = LCase(filename)
+    is4K = (Instr(1, fn, "2160p") > 0 or Instr(1, fn, "4k") > 0 or Instr(1, fn, "uhd") > 0)
+    isRemux = (Instr(1, fn, "remux") > 0)
+    isLossless = (Instr(1, fn, "dts-hd") > 0 or Instr(1, fn, "truehd") > 0 or Instr(1, fn, "atmos") > 0 or Instr(1, fn, "flac") > 0)
+    is1080p = (Instr(1, fn, "1080p") > 0)
+
+    if is4K
+        if isRemux and isLossless
+            return "4K UHD Remux (Lossless Audio)"
+        else if isRemux
+            return "4K UHD Remux"
+        else if isLossless
+            return "4K UHD (Lossless Audio)"
+        else
+            return "4K UHD (2160p HDR)"
+        end if
+    else if is1080p
+        if isRemux and isLossless
+            return "1080p Remux (Lossless Audio)"
+        else if isRemux
+            return "1080p Remux"
+        else
+            return "1080p FHD"
+        end if
+    end if
+
+    return defaultQuality
+end function
+
+' ------------------------------------------------------------------------------
+' 7. High-Level Premium Stream Resolver Pipeline
 ' ------------------------------------------------------------------------------
 function AllDebridResolveSource(sourceUri as String, apiKey = "" as String) as Dynamic
     if sourceUri = invalid or sourceUri = "" then return invalid
@@ -456,18 +549,22 @@ function AllDebridResolveSource(sourceUri as String, apiKey = "" as String) as D
                 if uploadRes.ready
                     statusRes = AllDebridGetMagnetStatus(uploadRes.magnetId, apiKey)
                     if statusRes <> invalid and statusRes.ready and statusRes.links <> invalid and statusRes.links.Count() > 0
-                        ' Find candidate video file link
-                        targetLink = statusRes.links[0].link
-                        unlockRes = AllDebridUnlockLink(targetLink, apiKey)
-                        if unlockRes <> invalid and unlockRes.success and unlockRes.unlockedUrl <> ""
-                            return {
-                                name: "AllDebrid [Cached Magnet: " + unlockRes.filename + "]",
-                                quality: "1080p FHD (Premium)",
-                                provider: "AllDebrid",
-                                url: unlockRes.unlockedUrl,
-                                filename: unlockRes.filename,
-                                filesize: unlockRes.filesize
-                            }
+                        ' Select highest-bitrate 4K / Remux / Lossless video link
+                        bestItem = PickBestDebridTorrentFile(statusRes.links)
+                        if bestItem <> invalid and bestItem.link <> invalid
+                            targetLink = bestItem.link
+                            unlockRes = AllDebridUnlockLink(targetLink, apiKey)
+                            if unlockRes <> invalid and unlockRes.success and unlockRes.unlockedUrl <> ""
+                                qualityLabel = DetermineStreamQualityLabel(unlockRes.filename, "1080p FHD (Premium)")
+                                return {
+                                    name: "AllDebrid [" + qualityLabel + ": " + unlockRes.filename + "]",
+                                    quality: qualityLabel,
+                                    provider: "AllDebrid",
+                                    url: unlockRes.unlockedUrl,
+                                    filename: unlockRes.filename,
+                                    filesize: unlockRes.filesize
+                                }
+                            end if
                         end if
                     end if
                 else
@@ -484,9 +581,10 @@ function AllDebridResolveSource(sourceUri as String, apiKey = "" as String) as D
             print "[AllDebrid] Processing supported web hoster link through AllDebrid..."
             unlockRes = AllDebridUnlockLink(sourceUri, apiKey)
             if unlockRes <> invalid and unlockRes.success and unlockRes.unlockedUrl <> ""
+                qualityLabel = DetermineStreamQualityLabel(unlockRes.filename, "1080p FHD (Premium)")
                 return {
-                    name: "AllDebrid [Unlocked: " + unlockRes.host + "]",
-                    quality: "1080p FHD (Premium)",
+                    name: "AllDebrid [" + qualityLabel + ": " + unlockRes.host + "]",
+                    quality: qualityLabel,
                     provider: "AllDebrid",
                     url: unlockRes.unlockedUrl,
                     filename: unlockRes.filename,

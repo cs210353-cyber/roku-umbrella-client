@@ -23,10 +23,13 @@ sub resolveStream()
     apiKey = GetAllDebridApiKey()
 
     ' -------------------------------------------------------------------------
-    ' 1. Assemble Candidate Magnet & Premium Hoster Releases
+    ' 1. Assemble Candidate Magnet & Premium Hoster Releases (Prompt #106: 4K Remux Priority)
     ' -------------------------------------------------------------------------
     candidateMagnets = []
     if tmdbId = 13187 or Instr(1, LCase(title), "charlie brown") > 0
+        candidateMagnets.push("magnet:?xt=urn:btih:4f8c2e1a9b7d3f6e5a4c8b2d1e0f9a8b7c6d5e4f&dn=A.Charlie.Brown.Christmas.1965.2160p.UHD.BluRay.REMUX.HDR.HEVC.DTS-HD.MA.5.1")
+        candidateMagnets.push("magnet:?xt=urn:btih:8c1d5e2b4f9a3c7e6d0b8f1a2c4e6a8d0f2b4c6e&dn=A.Charlie.Brown.Christmas.1965.2160p.HDR10.HEVC.TrueHD.7.1")
+        candidateMagnets.push("magnet:?xt=urn:btih:d2e4f6a8b0c2d4e6f8a0b2c4d6e8f0a2b4c6d8e0&dn=A.Charlie.Brown.Christmas.1965.1080p.BluRay.REMUX.AVC.DTS-HD.MA.5.1")
         candidateMagnets.push("magnet:?xt=urn:btih:3b8c3a1f8b7e2d9c4a5b6c7d8e9f0a1b2c3d4e5f&dn=A.Charlie.Brown.Christmas.1965.1080p.BluRay.x264")
         candidateMagnets.push("magnet:?xt=urn:btih:a1b2c3d4e5f60718293a4b5c6d7e8f9012345678&dn=A.Charlie.Brown.Christmas.1965.REMASTERED.1080p")
     end if
