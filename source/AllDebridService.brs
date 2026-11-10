@@ -30,7 +30,87 @@ function SetAllDebridApiKey(apiKey as String) as Boolean
 end function
 
 ' ------------------------------------------------------------------------------
-' 2. Internal HTTP Transport Helper (roUrlTransfer)
+' 2. Device Pairing / PIN Flow (/v4/pin/get & /v4/pin/check)
+' ------------------------------------------------------------------------------
+function AllDebridGetPin() as Object
+    result = {
+        success: false,
+        pin: "",
+        check: "",
+        expires_in: 0,
+        user_url: "https://alldebrid.com/pin/",
+        check_url: "",
+        error: ""
+    }
+
+    apiRes = AllDebridRequest("pin/get", "GET", invalid, invalid, "")
+    if apiRes.success and apiRes.data <> invalid
+        data = apiRes.data
+        result.success = true
+        if data.pin <> invalid then result.pin = data.pin
+        if data.check <> invalid then result.check = data.check
+        if data.expires_in <> invalid then result.expires_in = data.expires_in
+        if data.user_url <> invalid then result.user_url = data.user_url
+        if data.check_url <> invalid then result.check_url = data.check_url
+        print "[AllDebrid] Device Pairing PIN generated: " + result.pin + " (Authorize at: " + result.user_url + ")"
+        return result
+    end if
+
+    if apiRes.error <> ""
+        result.error = apiRes.error
+    else
+        result.error = "Failed to generate AllDebrid device pairing PIN"
+    end if
+
+    return result
+end function
+
+function AllDebridCheckPin(check as String, pin as String) as Object
+    result = {
+        success: false,
+        activated: false,
+        apikey: "",
+        expires_in: 0,
+        error: ""
+    }
+
+    if check = invalid or check = "" or pin = invalid or pin = ""
+        result.error = "Missing check or pin parameter"
+        return result
+    end if
+
+    queryParams = {
+        "check": check,
+        "pin": pin
+    }
+
+    apiRes = AllDebridRequest("pin/check", "GET", queryParams, invalid, "")
+    if apiRes.success and apiRes.data <> invalid
+        data = apiRes.data
+        result.success = true
+        if data.activated <> invalid then result.activated = (data.activated = true)
+        if data.apikey <> invalid then result.apikey = data.apikey
+        if data.expires_in <> invalid then result.expires_in = data.expires_in
+
+        if result.activated and result.apikey <> ""
+            print "[AllDebrid] Device successfully authorized! Saving API key to registry..."
+            SetAllDebridApiKey(result.apikey)
+        end if
+
+        return result
+    end if
+
+    if apiRes.error <> ""
+        result.error = apiRes.error
+    else
+        result.error = "PIN authorization pending or failed"
+    end if
+
+    return result
+end function
+
+' ------------------------------------------------------------------------------
+' 3. Internal HTTP Transport Helper (roUrlTransfer)
 ' ------------------------------------------------------------------------------
 function AllDebridRequest(endpoint as String, method as String, queryParams as Object, postParams as Object, apiKey = "" as String) as Object
     if apiKey = "" or apiKey = invalid
