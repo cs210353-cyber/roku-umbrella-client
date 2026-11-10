@@ -214,23 +214,43 @@ function AllDebridRequest(endpoint as String, method as String, queryParams as O
         end if
     end if
 
-    if responseStr <> "" and responseStr <> invalid
+    ' Prompt #105: Fix Response Type Safety - guard against Integer status code or non-string types causing Type Mismatch
+    if responseStr <> invalid
+        respType = type(responseStr)
+        if respType = "Integer" or respType = "roInt" or respType = "LongInteger" or respType = "Float" or respType = "Double"
+            print "[AllDebrid] Notice: responseStr received numeric type (" + respType + "): " + responseStr.ToStr() + ", safely converting to string."
+            responseStr = responseStr.ToStr()
+        else if respType <> "String" and respType <> "roString"
+            responseStr = ""
+        end if
+    else
+        responseStr = ""
+    end if
+
+    if responseStr <> ""
         jsonObj = ParseJson(responseStr)
-        if jsonObj <> invalid
+        if jsonObj <> invalid and type(jsonObj) = "roAssociativeArray"
             if jsonObj.status = "success"
                 result.success = true
                 result.status = "success"
                 result.data = jsonObj.data
             else
-                result.status = jsonObj.status
+                if jsonObj.status <> invalid
+                    result.status = jsonObj.status.ToStr()
+                else
+                    result.status = "error"
+                end if
                 if jsonObj.error <> invalid
                     if type(jsonObj.error) = "roAssociativeArray" and jsonObj.error.message <> invalid
-                        result.error = jsonObj.error.message
+                        result.error = jsonObj.error.message.ToStr()
                     else
                         result.error = jsonObj.error.ToStr()
                     end if
                 end if
             end if
+        else if jsonObj <> invalid and (type(jsonObj) = "Integer" or type(jsonObj) = "roInt")
+            result.status = "HTTP_" + jsonObj.ToStr()
+            result.error = "Received numeric status payload: " + jsonObj.ToStr()
         else
             result.error = "Invalid JSON payload received"
         end if
@@ -427,50 +447,58 @@ end function
 function AllDebridResolveSource(sourceUri as String, apiKey = "" as String) as Dynamic
     if sourceUri = invalid or sourceUri = "" then return invalid
 
-    ' Case A: Magnet Link Pipeline
-    if LCase(Left(sourceUri, 8)) = "magnet:?"
-        print "[AllDebrid] Processing magnet link through AllDebrid pipeline..."
-        uploadRes = AllDebridUploadMagnet(sourceUri, apiKey)
-        if uploadRes.success
-            if uploadRes.ready
-                statusRes = AllDebridGetMagnetStatus(uploadRes.magnetId, apiKey)
-                if statusRes.ready and statusRes.links.Count() > 0
-                    ' Find candidate video file link
-                    targetLink = statusRes.links[0].link
-                    unlockRes = AllDebridUnlockLink(targetLink, apiKey)
-                    if unlockRes.success and unlockRes.unlockedUrl <> ""
-                        return {
-                            name: "AllDebrid [Cached Magnet: " + unlockRes.filename + "]",
-                            quality: "1080p FHD (Premium)",
-                            provider: "AllDebrid",
-                            url: unlockRes.unlockedUrl,
-                            filename: unlockRes.filename,
-                            filesize: unlockRes.filesize
-                        }
+    try
+        ' Case A: Magnet Link Pipeline
+        if LCase(Left(sourceUri, 8)) = "magnet:?"
+            print "[AllDebrid] Processing magnet link through AllDebrid pipeline..."
+            uploadRes = AllDebridUploadMagnet(sourceUri, apiKey)
+            if uploadRes <> invalid and uploadRes.success
+                if uploadRes.ready
+                    statusRes = AllDebridGetMagnetStatus(uploadRes.magnetId, apiKey)
+                    if statusRes <> invalid and statusRes.ready and statusRes.links <> invalid and statusRes.links.Count() > 0
+                        ' Find candidate video file link
+                        targetLink = statusRes.links[0].link
+                        unlockRes = AllDebridUnlockLink(targetLink, apiKey)
+                        if unlockRes <> invalid and unlockRes.success and unlockRes.unlockedUrl <> ""
+                            return {
+                                name: "AllDebrid [Cached Magnet: " + unlockRes.filename + "]",
+                                quality: "1080p FHD (Premium)",
+                                provider: "AllDebrid",
+                                url: unlockRes.unlockedUrl,
+                                filename: unlockRes.filename,
+                                filesize: unlockRes.filesize
+                            }
+                        end if
                     end if
+                else
+                    print "[AllDebrid] Magnet is not currently cached on AllDebrid seedboxes."
                 end if
-            else
-                print "[AllDebrid] Magnet is not currently cached on AllDebrid seedboxes."
+            else if uploadRes <> invalid and uploadRes.error <> ""
+                print "[AllDebrid] Warning: Magnet upload failed - " + uploadRes.error
+            end if
+            return invalid
+        end if
+
+        ' Case B: Direct Web Hoster Link Pipeline (Rapidgator, 1fichier, Uptobox, etc.)
+        if Instr(1, sourceUri, "rapidgator") > 0 or Instr(1, sourceUri, "1fichier") > 0 or Instr(1, sourceUri, "uptobox") > 0 or Instr(1, sourceUri, "nitroflare") > 0 or Instr(1, sourceUri, "turbobit") > 0
+            print "[AllDebrid] Processing supported web hoster link through AllDebrid..."
+            unlockRes = AllDebridUnlockLink(sourceUri, apiKey)
+            if unlockRes <> invalid and unlockRes.success and unlockRes.unlockedUrl <> ""
+                return {
+                    name: "AllDebrid [Unlocked: " + unlockRes.host + "]",
+                    quality: "1080p FHD (Premium)",
+                    provider: "AllDebrid",
+                    url: unlockRes.unlockedUrl,
+                    filename: unlockRes.filename,
+                    filesize: unlockRes.filesize
+                }
+            else if unlockRes <> invalid and unlockRes.error <> ""
+                print "[AllDebrid] Warning: Web hoster unlock failed - " + unlockRes.error
             end if
         end if
-        return invalid
-    end if
-
-    ' Case B: Direct Web Hoster Link Pipeline (Rapidgator, 1fichier, Uptobox, etc.)
-    if Instr(1, sourceUri, "rapidgator") > 0 or Instr(1, sourceUri, "1fichier") > 0 or Instr(1, sourceUri, "uptobox") > 0 or Instr(1, sourceUri, "nitroflare") > 0 or Instr(1, sourceUri, "turbobit") > 0
-        print "[AllDebrid] Processing supported web hoster link through AllDebrid..."
-        unlockRes = AllDebridUnlockLink(sourceUri, apiKey)
-        if unlockRes.success and unlockRes.unlockedUrl <> ""
-            return {
-                name: "AllDebrid [Unlocked: " + unlockRes.host + "]",
-                quality: "1080p FHD (Premium)",
-                provider: "AllDebrid",
-                url: unlockRes.unlockedUrl,
-                filename: unlockRes.filename,
-                filesize: unlockRes.filesize
-            }
-        end if
-    end if
+    catch e
+        print "[AllDebrid] Warning: Exception caught during AllDebridResolveSource: " + e.message
+    end try
 
     return invalid
 end function

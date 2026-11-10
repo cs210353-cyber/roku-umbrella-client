@@ -37,12 +37,16 @@ sub resolveStream()
     if candidateMagnets.Count() > 0
         print "[StreamResolverTask] Evaluating " + candidateMagnets.Count().ToStr() + " candidate magnet links via AllDebrid..."
         for each mag in candidateMagnets
-            debridSource = AllDebridResolveSource(mag, apiKey)
-            if debridSource <> invalid and debridSource.url <> ""
-                print "[StreamResolverTask] AllDebrid unlocked premium source: " + debridSource.name
-                sources.push(debridSource)
-                exit for
-            end if
+            try
+                debridSource = AllDebridResolveSource(mag, apiKey)
+                if debridSource <> invalid and debridSource.url <> ""
+                    print "[StreamResolverTask] AllDebrid unlocked premium source: " + debridSource.name
+                    sources.push(debridSource)
+                    exit for
+                end if
+            catch e
+                print "[StreamResolverTask] Warning: AllDebrid resolution error: " + e.message
+            end try
         end for
     end if
 
