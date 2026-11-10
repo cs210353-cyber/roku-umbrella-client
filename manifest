@@ -1,0 +1,21 @@
+# ==============================================================================
+# Roku Umbrella Client Manifest
+# ==============================================================================
+title=Umbrella
+subtitle=On-Demand Media Browser
+app_name=roku-umbrella-client
+major_version=1
+minor_version=0
+build_version=1
+
+# Display & Resolution
+ui_resolutions=fhd
+
+# Visual Branding
+splash_screen_fhd=pkg:/images/splash_fhd.png
+mm_icon_focus_hd=pkg:/images/icon_focus_hd.png
+mm_icon_focus_fhd=pkg:/images/icon_focus_fhd.png
+
+# Channel Capabilities
+bs_const={debug:true}
+supports_input_params=1

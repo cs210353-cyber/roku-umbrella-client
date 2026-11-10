@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MainScene" extends="Scene">
+    <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+
+    <children>
+        <!-- Dynamic Backdrop Preview Image -->
+        <Poster
+            id="backdropPoster"
+            width="1920"
+            height="1080"
+            opacity="0.35"
+            loadDisplayMode="scaleToZoom" />
+
+        <!-- Gradient Vignette Background Overlay -->
+        <Rectangle
+            id="backgroundGradient"
+            width="1920"
+            height="1080"
+            color="0x0B0E14D8" />
+
+        <!-- Top Header Navigation Bar (Kodi/Umbrella Style) -->
+        <Rectangle
+            id="headerBar"
+            translation="[0, 0]"
+            width="1920"
+            height="110"
+            color="0x080A0ECC" />
+
+        <Label
+            id="appTitle"
+            translation="[80, 32]"
+            text="UMBRELLA"
+            font="font:LargeBoldSystemFont"
+            color="0x00A8FFFF" />
+
+        <Label
+            id="appSubtitle"
+            translation="[270, 42]"
+            text="ON-DEMAND MEDIA BROWSER"
+            font="font:SmallBoldSystemFont"
+            color="0x8892B0FF" />
+
+        <!-- Category Tabs -->
+        <LabelList
+            id="categoryTabs"
+            translation="[750, 34]"
+            itemSize="[260, 48]"
+            itemSpacing="[16, 0]"
+            orientation="horizontal" />
+
+        <!-- Media Info Banner (Selected Item Metadata) -->
+        <Group id="previewPanel" translation="[80, 140]">
+            <Label
+                id="previewTitle"
+                translation="[0, 0]"
+                width="1200"
+                height="45"
+                font="font:LargeBoldSystemFont"
+                color="0xFFFFFFFF" />
+
+            <Label
+                id="previewMeta"
+                translation="[0, 52]"
+                width="1200"
+                height="30"
+                font="font:SmallBoldSystemFont"
+                color="0x00A8FFFF" />
+
+            <Label
+                id="previewOverview"
+                translation="[0, 90]"
+                width="1200"
+                height="80"
+                font="font:MediumSystemFont"
+                color="0xCCD6F6FF"
+                maxLines="2"
+                wrap="true" />
+        </Group>
+
+        <!-- Category Grid for Poster Navigation -->
+        <MarkupGrid
+            id="mediaGrid"
+            translation="[80, 340]"
+            itemComponentName="CategoryItem"
+            itemSize="[280, 420]"
+            itemSpacing="[24, 24]"
+            numColumns="6"
+            numRows="2" />
+
+        <!-- Status / Loading Indicator -->
+        <Label
+            id="statusLabel"
+            translation="[80, 1010]"
+            width="1760"
+            height="30"
+            font="font:SmallSystemFont"
+            color="0x8892B0FF"
+            text="Ready  |  [OK] Open Title Details  |  [LEFT/RIGHT] Browse" />
+
+        <!-- Details Modal Dialog -->
+        <MediaDetailsDialog
+            id="detailsDialog"
+            visible="false" />
+
+        <!-- Fullscreen Video Player for Direct Play -->
+        <Video
+            id="videoPlayer"
+            width="1920"
+            height="1080"
+            visible="false" />
+    </children>
+</component>

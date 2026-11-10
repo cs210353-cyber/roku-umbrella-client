@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="CategoryItem" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="onContentChanged" />
+        <field id="focusPercent" type="float" onChange="onFocusPercentChanged" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/components/CategoryItem.brs" />
+
+    <children>
+        <!-- Card Background & Focus Glow -->
+        <Rectangle
+            id="focusBorder"
+            width="284"
+            height="424"
+            translation="[-2, -2]"
+            color="0x00A8FFFF"
+            opacity="0.0" />
+
+        <Rectangle
+            id="itemCard"
+            width="280"
+            height="420"
+            color="0x1A1E24FF" />
+
+        <!-- Poster Image -->
+        <Poster
+            id="posterImage"
+            width="280"
+            height="370"
+            loadDisplayMode="scaleToZoom" />
+
+        <!-- Card Title Bar -->
+        <Rectangle
+            id="titleBar"
+            translation="[0, 370]"
+            width="280"
+            height="50"
+            color="0x101318FF" />
+
+        <Label
+            id="titleLabel"
+            translation="[10, 382]"
+            width="260"
+            height="26"
+            font="font:SmallBoldSystemFont"
+            color="0xFFFFFFFF"
+            horizAlign="left"
+            vertAlign="center"
+            maxLines="1"
+            ellipsizeOnBoundary="true" />
+    </children>
+</component>

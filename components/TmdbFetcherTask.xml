@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="TmdbFetcherTask" extends="Task">
+    <interface>
+        <field id="requestCategory" type="string" />
+        <field id="searchQuery" type="string" />
+        <field id="contentResult" type="node" />
+        <field id="status" type="string" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/components/TmdbFetcherTask.brs" />
+</component>

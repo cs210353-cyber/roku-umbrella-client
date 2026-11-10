@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="MediaDetailsDialog" extends="Group">
+    <interface>
+        <field id="mediaItem" type="node" onChange="onMediaItemChanged" />
+        <field id="playRequested" type="boolean" alwaysNotify="true" />
+        <field id="closeRequested" type="boolean" alwaysNotify="true" />
+        <field id="selectedStreamUrl" type="string" />
+    </interface>
+
+    <script type="text/brightscript" uri="pkg:/components/MediaDetailsDialog.brs" />
+
+    <children>
+        <!-- Modal Backdrop Dimmer -->
+        <Rectangle
+            id="dimmer"
+            width="1920"
+            height="1080"
+            color="0x000000D0" />
+
+        <!-- Dialog Box Container -->
+        <Rectangle
+            id="dialogFrame"
+            translation="[300, 160]"
+            width="1320"
+            height="760"
+            color="0x12161EFF" />
+
+        <Rectangle
+            id="dialogBorder"
+            translation="[300, 160]"
+            width="1320"
+            height="760"
+            color="0x00A8FFFF"
+            opacity="0.2" />
+
+        <!-- Poster in Dialog -->
+        <Poster
+            id="dialogPoster"
+            translation="[340, 200]"
+            width="320"
+            height="480"
+            loadDisplayMode="scaleToZoom" />
+
+        <!-- Metadata Details -->
+        <Label
+            id="dialogTitle"
+            translation="[700, 200]"
+            width="880"
+            height="45"
+            font="font:LargeBoldSystemFont"
+            color="0xFFFFFFFF"
+            maxLines="1" />
+
+        <Label
+            id="dialogMetaBadge"
+            translation="[700, 255]"
+            width="880"
+            height="30"
+            font="font:SmallBoldSystemFont"
+            color="0x00A8FFFF" />
+
+        <Label
+            id="dialogOverview"
+            translation="[700, 305]"
+            width="880"
+            height="200"
+            font="font:MediumSystemFont"
+            color="0xCCCCCCFF"
+            maxLines="6"
+            wrap="true" />
+
+        <!-- Scraped Stream Sources List -->
+        <Label
+            translation="[700, 520]"
+            width="880"
+            height="30"
+            font="font:SmallBoldSystemFont"
+            color="0xAAAAAAFF"
+            text="RESOLVED STREAM SOURCES:" />
+
+        <LabelList
+            id="sourcesList"
+            translation="[700, 560]"
+            itemSize="[880, 48]"
+            itemSpacing="[0, 8]"
+            numRows="3" />
+
+        <!-- Action Hint -->
+        <Label
+            translation="[700, 780]"
+            width="880"
+            height="30"
+            font="font:SmallSystemFont"
+            color="0x888888FF"
+            text="[OK] Play Stream  |  [BACK] Return to Catalog" />
+    </children>
+</component>
