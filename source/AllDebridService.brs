@@ -118,6 +118,9 @@ function AllDebridRequest(endpoint as String, method as String, queryParams as O
     end if
 
     baseUrl = "https://api.alldebrid.com/v4/" + endpoint
+    if Left(endpoint, 5) = "v4.1/"
+        baseUrl = "https://api.alldebrid.com/" + endpoint
+    end if
     transfer = CreateObject("roUrlTransfer")
     transfer.SetCertificatesFile("common:/certs/ca-bundle.crt")
     transfer.InitClientCertificates()
@@ -268,7 +271,7 @@ function AllDebridGetMagnetStatus(magnetId as Dynamic, apiKey = "" as String) as
         "id": magnetId.ToStr()
     }
 
-    apiRes = AllDebridRequest("magnet/status", "GET", queryParams, invalid, apiKey)
+    apiRes = AllDebridRequest("v4.1/magnet/status", "GET", queryParams, invalid, apiKey)
     if apiRes.success and apiRes.data <> invalid
         magnets = apiRes.data.magnets
         targetMag = invalid
