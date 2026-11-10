@@ -600,3 +600,152 @@ function AllDebridResolveSource(sourceUri as String, apiKey = "" as String) as D
 
     return invalid
 end function
+
+' ------------------------------------------------------------------------------
+' 8. Umbrella Upstream Reference Pattern: Source Filter & Sorter Engine (Prompt #107)
+' ------------------------------------------------------------------------------
+' Ported and adapted from umbrellaplug/umbrellaplug.github.io:
+'   - modules/sources.py: filter_dupes(), sort_byQuality(), _qrank(), _prank()
+'   - modules/source_utils.py: REMUX, HDR, DOLBY_TRUEHD, DTS_HDMA, extras_filter()
+' ------------------------------------------------------------------------------
+
+function UmbrellaFilterDuplicates(sources as Object) as Object
+    if sources = invalid or type(sources) <> "roArray" or sources.Count() = 0
+        return []
+    end if
+
+    deduped = []
+    seenUrls = {}
+    seenHashes = {}
+
+    for each src in sources
+        if src <> invalid and src.url <> invalid and src.url <> ""
+            urlKey = LCase(src.url)
+            hashKey = ""
+            if src.hash <> invalid and src.hash <> ""
+                hashKey = LCase(src.hash)
+            else if Instr(1, urlKey, "btih:") > 0
+                btihStart = Instr(1, urlKey, "btih:") + 5
+                hashKey = Mid(urlKey, btihStart, 40)
+            end if
+
+            isDupe = false
+            if seenUrls.DoesExist(urlKey)
+                isDupe = true
+            else if hashKey <> "" and seenHashes.DoesExist(hashKey)
+                isDupe = true
+            end if
+
+            if not isDupe
+                seenUrls[urlKey] = true
+                if hashKey <> "" then seenHashes[hashKey] = true
+                deduped.push(src)
+            end if
+        end if
+    end for
+
+    return deduped
+end function
+
+function UmbrellaScoreSource(src as Object) as Integer
+    if src = invalid then return 0
+    score = 100
+
+    name = ""
+    if src.name <> invalid then name = LCase(src.name)
+    quality = ""
+    if src.quality <> invalid then quality = LCase(src.quality)
+    provider = ""
+    if src.provider <> invalid then provider = LCase(src.provider)
+    filename = ""
+    if src.filename <> invalid then filename = LCase(src.filename)
+
+    targetStr = name + " " + quality + " " + filename
+
+    ' 1. Quality & Resolution Ranking (Umbrella _qrank)
+    if Instr(1, targetStr, "2160p") > 0 or Instr(1, targetStr, "4k") > 0 or Instr(1, targetStr, "uhd") > 0
+        score = score + 10000
+    else if Instr(1, targetStr, "1080p") > 0
+        score = score + 5000
+    else if Instr(1, targetStr, "720p") > 0
+        score = score + 2000
+    else
+        score = score + 500
+    end if
+
+    ' 2. Remux Ranking (Umbrella REMUX)
+    if Instr(1, targetStr, "remux") > 0 or Instr(1, targetStr, "bdremux") > 0
+        score = score + 4000
+    end if
+
+    ' 3. Lossless & High-End Audio Ranking (Umbrella DOLBY_TRUEHD, DTS_HDMA, DTSX)
+    if Instr(1, targetStr, "truehd") > 0 or Instr(1, targetStr, "true.hd") > 0
+        score = score + 2000
+    else if Instr(1, targetStr, "dts-hd") > 0 or Instr(1, targetStr, "dtshd") > 0 or Instr(1, targetStr, "hd.ma") > 0 or Instr(1, targetStr, "hdma") > 0
+        score = score + 2000
+    else if Instr(1, targetStr, "atmos") > 0
+        score = score + 1800
+    else if Instr(1, targetStr, "dtsx") > 0 or Instr(1, targetStr, "dts.x") > 0
+        score = score + 1700
+    else if Instr(1, targetStr, "7.1") > 0 or Instr(1, targetStr, "8ch") > 0
+        score = score + 1200
+    else if Instr(1, targetStr, "5.1") > 0 or Instr(1, targetStr, "6ch") > 0
+        score = score + 800
+    end if
+
+    ' 4. HDR / Color Grading (Umbrella HDR)
+    if Instr(1, targetStr, "hdr") > 0 or Instr(1, targetStr, "dv") > 0 or Instr(1, targetStr, "dovi") > 0 or Instr(1, targetStr, "dolby vision") > 0
+        score = score + 1000
+    end if
+
+    ' 5. Provider Priority (Umbrella _prank)
+    if Instr(1, provider, "alldebrid") > 0 or Instr(1, name, "alldebrid") > 0
+        score = score + 3000
+    else if Instr(1, provider, "ersatztv") > 0
+        score = score + 1500
+    else if Instr(1, provider, "archiveorg") > 0
+        score = score + 1000
+    end if
+
+    ' 6. Filesize / Bitrate bonus
+    if src.filesize <> invalid and Val(src.filesize.ToStr()) > 0
+        mb = Val(src.filesize.ToStr()) / (1024 * 1024)
+        score = score + Int(mb / 10)
+    end if
+
+    return score
+end function
+
+function UmbrellaSortSources(sources as Object) as Object
+    if sources = invalid or type(sources) <> "roArray" or sources.Count() <= 1
+        return sources
+    end if
+
+    scored = []
+    for each s in sources
+        sc = UmbrellaScoreSource(s)
+        scored.push({
+            score: sc,
+            src: s
+        })
+    end for
+
+    ' Descending sort by score
+    n = scored.Count()
+    for i = 0 to n - 2
+        for j = 0 to n - 2 - i
+            if scored[j].score < scored[j + 1].score
+                temp = scored[j]
+                scored[j] = scored[j + 1]
+                scored[j + 1] = temp
+            end if
+        end for
+    end for
+
+    sortedList = []
+    for each item in scored
+        sortedList.push(item.src)
+    end for
+
+    return sortedList
+end function

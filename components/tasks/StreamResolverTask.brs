@@ -89,7 +89,13 @@ sub resolveStream()
     end if
 
     ' -------------------------------------------------------------------------
-    ' 4. Final Source Selection & Status Update
+    ' 4. Umbrella Upstream Reference Pattern: Deduplicate & Sort by Quality/Audio
+    ' -------------------------------------------------------------------------
+    sources = UmbrellaFilterDuplicates(sources)
+    sources = UmbrellaSortSources(sources)
+
+    ' -------------------------------------------------------------------------
+    ' 5. Final Source Selection & Status Update
     ' -------------------------------------------------------------------------
     if sources.Count() > 0
         best = sources[0]
@@ -98,7 +104,7 @@ sub resolveStream()
         m.top.streamProvider = best.provider
         m.top.streamSources = sources
         m.top.status = "RESOLVED"
-        print "[StreamResolverTask] Resolved " + sources.Count().ToStr() + " sources. Primary: " + best.name + " (" + best.url + ")"
+        print "[StreamResolverTask] Resolved " + sources.Count().ToStr() + " sources. Primary (Umbrella Ranked): " + best.name + " (" + best.url + ")"
     else
         m.top.status = "FAILED"
         print "[StreamResolverTask] Failed to resolve stream sources for: " + title
