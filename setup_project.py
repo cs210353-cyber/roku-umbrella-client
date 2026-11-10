@@ -13,7 +13,7 @@ import os
 import subprocess
 from datetime import datetime
 
-def LogMasterPromptHeader(task_summary="New Roku Umbrella Client Project Setup", prompt_number=87):
+def LogMasterPromptHeader(task_summary="Roku Umbrella Client Project", prompt_number=100):
     num_str = f"{prompt_number:g}" if isinstance(prompt_number, (int, float)) else str(prompt_number)
     clean_summary = task_summary.strip()
     summary_upper = clean_summary.upper()
@@ -28,7 +28,7 @@ def LogMasterPromptHeader(task_summary="New Roku Umbrella Client Project Setup",
     print("=" * 80)
     print()
 
-def LogMasterPromptFooter(status="SUCCESS", prompt_number=87, details=""):
+def LogMasterPromptFooter(status="SUCCESS", prompt_number=100, details=""):
     num_str = f"{prompt_number:g}" if isinstance(prompt_number, (int, float)) else str(prompt_number)
     now_iso = datetime.now().astimezone().isoformat()
 

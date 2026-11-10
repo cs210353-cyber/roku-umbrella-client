@@ -5,8 +5,13 @@
 ' media browser interface.
 ' ==============================================================================
 
-sub Main()
-    LogMasterPromptHeader("New Roku Umbrella Client Project Setup", 87)
+sub Main(args as Dynamic)
+    pNum = 100
+    if args <> invalid and type(args) = "roAssociativeArray" and args.doesExist("prompt")
+        valNum = Val(args.prompt)
+        if valNum > 0 then pNum = valNum
+    end if
+    LogMasterPromptHeader("Roku Umbrella Client Session", pNum)
     print "[Umbrella] Initializing Roku Umbrella Client application..."
 
     screen = CreateObject("roSGScreen")
@@ -29,5 +34,5 @@ sub Main()
         end if
     end while
 
-    LogMasterPromptFooter("SUCCESS", 87, "Umbrella MainScene session terminated normally.")
+    LogMasterPromptFooter("SUCCESS", pNum, "Umbrella MainScene session terminated normally.")
 end sub
